@@ -219,7 +219,6 @@ ggplot(line_chart_data, aes(x = line_chart_data$YearMonth, y = Conversion_Rate, 
     axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(face = "bold")
   )
-
 ```
 
 ```{r}
