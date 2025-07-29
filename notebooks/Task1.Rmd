@@ -1,0 +1,313 @@
+---
+q---
+title: "Task 1"
+author: "Bao Luu"
+date: "2025-06-29"
+output: html_document
+---
+
+# Task 1
+
+# 1. Install & Import library
+
+```{r}
+# install.packages("psych")
+library(tidyverse) 
+library(GGally)
+library(psych)
+library(scales)
+library(corrplot)
+```
+
+# 2. Read & Understand the dataset
+
+```{r}
+df <- read.csv("../data/Web Analytic_Dataset.csv", 
+                encoding = 'latin1', 
+                fileEncoding = 'latin1' )
+head(df)
+```
+
+## 2.1 The shape of dataset
+
+```{r}
+cat("The number of data points: ", dim(df)[1], "\n")
+cat("The number of variables: ", dim(df)[-1])
+```
+
+**-\> Comment:** The dataset has 250 data points and 13 variables
+
+## 2.2 Checking null value
+
+```{r}
+colSums(is.na(df))
+```
+
+## 2.3 Data Cleaning
+
+### 2.3.1 Cleaning the column names
+
+```{r}
+df <- df %>%
+  rename(
+    Source_Medium = `Source...Medium`,
+    Year = `Year`,
+    Month_of_the_year = `Month.of.the.year`,
+    Users = `Users`,
+    New_Users = `New.Users`,
+    Sessions = `Sessions`,
+    Bounce_Rate = `Bounce.Rate`,
+    Pageviews = `Pageviews`,
+    Avg_Session_Duration = `Avg..Session.Duration`,
+    Conversion_Rate = `Conversion.Rate....`,
+    Transactions = `Transactions`,
+    Revenue = `Revenue`,
+    Quantity_Sold = `Quantity.Sold`
+  )
+str(df)
+```
+
+### 2.3.2 Cleaning data
+
+```{r}
+cols_to_clean_commas <- c("Users", "New_Users", "Sessions", "Pageviews", "Revenue", "Quantity_Sold", "Transactions")
+for(col in cols_to_clean_commas) {
+  df[[col]] <- as.numeric(gsub(",", "", df[[col]]))
+}
+```
+
+```{r}
+df <- df %>% 
+  mutate(
+    Bounce_Rate = as.numeric(sub("%", "", Bounce_Rate)) / 100,
+    Conversion_Rate = ifelse(Conversion_Rate == "<0.01", "0", Conversion_Rate),
+    Conversion_Rate = as.numeric(Conversion_Rate),
+    Avg_Session_Duration = as.numeric(hms(Avg_Session_Duration))
+  )
+str(df)
+
+```
+
+```{r}
+
+```
+
+# 3. Task a:
+
+## 3.1 Identify Top 3 Sources based on Revenue
+
+```{r}
+# Group by Source_Medium and Year to get total revenue
+revenue_by_source <- df %>%
+  group_by(Source_Medium, Year) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE)) %>%
+  ungroup()
+
+# Find out the top 3 sources based on revenue
+top_3_sources <- df %>%
+  group_by(Source_Medium) %>%
+  summarise(Grand_Total_Revenue = sum(Revenue, na.rm = TRUE)) %>%
+  arrange(desc(Grand_Total_Revenue)) %>%
+  slice_head(n = 3) %>%
+  pull(Source_Medium)
+
+revenue_by_source
+
+```
+
+```{r}
+# Filter the summary table for only the top 3 sources
+top_3_revenue_table <- revenue_by_source %>%
+  filter(Source_Medium %in% top_3_sources) %>%
+  pivot_wider(names_from = Year, values_from = Total_Revenue, values_fill = 0)
+
+top3_revenue <- df %>% filter(Source_Medium %in% top_3_sources) %>% group_by(Year, Source_Medium) %>% summarise(TotalRevenue = sum(Revenue), .groups = "drop")
+top3_revenue
+
+top_3_revenue_table
+
+```
+
+```{r}
+top_sources_by_year <- df %>%
+  group_by(`Source_Medium`) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE),.groups = 'drop') %>%
+  
+  slice_max(order_by = Total_Revenue, n = 3) %>%
+  ungroup()
+
+top_sources_by_year
+```
+
+## 3.2 Chart to visualize the top three and revenue for each year
+
+```{r}
+```
+
+```{r}
+chart_data <- revenue_by_source %>%
+  filter(Source_Medium %in% top_3_sources)
+
+ggplot(chart_data, aes(x = factor(Year), y = Total_Revenue, fill = Source_Medium)) + 
+  geom_bar(stat = "identity",position = "dodge") + 
+  geom_text(
+    aes(label = dollar(Total_Revenue, accuracy = 1)),
+    position = position_dodge(width = 0.9), 
+    vjust = -0.5,
+    size = 3.5 
+  ) +
+  scale_fill_manual(values = c("green", "red", "blue")) + 
+  scale_y_continuous(labels = dollar_format()) +
+  labs( title = "Top 3 Traffic Sources by Revenue for each year", 
+        x = "Year", 
+        y = "Revenue", 
+        fill = "Source_Medium" ) + theme_minimal()
+```
+
+# 4. Task b:
+
+```{r}
+top_5_sources_by_conv <- df %>%
+  group_by(Source_Medium) %>%
+  summarise(Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE)) %>%
+  slice_max(order_by = Avg_Conversion_Rate, n = 5) %>%
+  pull(Source_Medium)
+
+top_conversion <- df %>%
+  group_by(Source_Medium) %>%
+  summarise(Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE)) %>%
+  arrange(desc(Avg_Conversion_Rate)) %>%
+  slice_head(n = 5)
+
+device_summary <- df %>% 
+  group_by(Source_Medium, Year, Month_of_the_year) %>%
+  summarize(
+    Total_Users = sum(Users, na.rm = TRUE),
+    Total_New_Users = sum(New_Users, na.rm = TRUE),
+    Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE) 
+  ) %>% 
+  arrange(Source_Medium, Year, desc(Avg_Conversion_Rate))
+
+device_summary$YearMonth <- as.Date(paste(device_summary$Year, device_summary$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
+
+line_chart_data <- df %>%
+  filter(Source_Medium %in% top_5_sources_by_conv)
+
+
+device_summary
+top_conversion
+```
+
+```{r}
+line_chart_data$YearMonth <- as.Date(paste(line_chart_data$Year, line_chart_data$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
+
+ggplot(line_chart_data, aes(x = line_chart_data$YearMonth, y = Conversion_Rate, color = Source_Medium, group = Source_Medium)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +  
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_date(date_breaks = "1 months", date_labels = "%b %Y") +
+  labs(
+    title = "Monthly Users for Top 5 Traffic Sources",
+    subtitle = "Comparing user trends over time (2019-2020)",
+    x = "Month and Year",
+    y = "Avg_Conversion_Rate (%)",
+    color = "Source_Medium" # Legend title
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+
+```
+
+```{r}
+device_summary$YearMonth <- as.Date(paste(device_summary$Year, device_summary$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
+
+ggplot(device_summary, aes(x = YearMonth, y = Avg_Conversion_Rate, fill = Source_Medium)) + 
+  geom_bar(stat = "identity", position = "dodge") + 
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent) + 
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") + 
+  labs(
+    title = "Monthly Conversion Rate by Source_Medium",
+    x = "Month and Year",
+    y = "Average Conversion Rate (%)",
+    fill = "Source_Medium"
+  ) + 
+  theme_minimal()
+```
+
+# 5. Task c:
+
+```{r}
+relationship_df <- df %>%
+  select(Bounce_Rate, Conversion_Rate, Transactions, Revenue)
+# Calculate the correlation matrix
+correlation_matrix <- cor(relationship_df, use = "complete.obs")
+
+correlation_matrix
+```
+
+```{r}
+corrplot(correlation_matrix,
+         method = "color",
+         type = "full",
+         addCoef.col = "black", 
+         tl.col = "black",      
+         tl.srt = 45,  
+         tl.cex = 0.8,
+         main = "Correlation Heatmap of Key Metrics",
+         mar = c(0,0,1,0))
+```
+
+```{r}
+# Bounce Rate vs Conversion Rate
+ggplot(relationship_df, aes(x = Bounce_Rate, y = Conversion_Rate )) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm",color = "black", se = FALSE ) + 
+  labs(
+    title = "Relationship between Bounce Rate and Conversion Rate",
+    x = "Bounce_Rate",
+    y = "Conversion_Rate"
+  ) + theme_minimal()
+
+```
+
+```{r}
+# Conversion Rate vs Transaction
+ggplot(relationship_df, aes(x = Conversion_Rate, y = Transactions )) +
+  geom_point(color = "green") +
+  geom_smooth(method = "lm",color = "black", se = FALSE ) + 
+  labs(
+    title = "Relationship between Conversion Rate and Transaction",
+    x = "Conversion_Rate",
+    y = "Transactions"
+  ) + theme_minimal()
+```
+
+```{r}
+# Transactions vs Revenue
+ggplot(relationship_df, aes(x = Transactions, y = Revenue)) +
+  geom_point(color = "red") +
+  geom_smooth(method = "lm", color = "black", se = FALSE) + 
+  labs(
+    title = "Relationship between Transactions and Revenue",
+    x = "Transactions",
+    y = "Revenue"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Bounce_rate vs Revenue
+ggplot(relationship_df, aes(x = Bounce_Rate, y = Revenue )) +
+  geom_point(color = "dodgerblue") +
+  geom_smooth(method = "lm",color = "black", se = FALSE ) + 
+  labs(
+    title = "Relationship between Bounce Rate and Revenue",
+    x = "Bounce_Rate",
+    y = "Revenue"
+  ) + theme_minimal()
+```

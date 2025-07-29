@@ -1,0 +1,189 @@
+---
+title: "Task2"
+author: "Bao Luu"
+date: "2025-06-29"
+output: html_document
+---
+
+# 1. Install & Import libraries
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(psych)
+```
+
+# 2. Read & Understand dataset
+
+```{r}
+df2 <- read.csv("../data/diabetes.csv", 
+               encoding = "latin1",
+               fileEncoding = "latin1")
+head(df2)
+```
+
+```{r}
+sapply(df2, class)
+```
+
+```{r}
+colSums(is.na(df2))
+```
+
+# 3. Task d
+
+```{r}
+desc_stats <- function(data_column) {
+  if (is.numeric(data_column)) {
+    mean_val <- mean(data_column, na.rm = TRUE)
+    median_val <- median(data_column, na.rm = TRUE)
+    sd_val <- sd(data_column, na.rm = TRUE)
+    var_val <- var(data_column, na.rm = TRUE)
+    return(c(mean = mean_val, median = median_val, standard_deviation = sd_val, variance = var_val))
+  } else {
+    return(c(mean = NA, median = NA, standard_deviation = NA, variance = NA))
+  }
+
+}
+```
+
+```{r}
+for (col_name in names(df2)){
+  cat(paste("Statistics of ", col_name, "\n"))
+  stat_names <- desc_stats(df2[[col_name]])
+  for (stat_name in names(stat_names)) {
+    cat(stat_name,":", stat_names[[stat_name]]," ")
+  }
+  cat("\n")
+}
+
+```
+
+```{r}
+num_cols = c
+for (col_name in names(df2)){
+  plot <- ggplot(df2, aes_string(x = col_name)) +
+    geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+    labs(
+      title = paste("Distribution of", col_name, "before cleaning"),
+      x = col_name,
+      y = "Frequency (Count)"
+    ) +
+    theme_light()
+  
+  print(plot)
+}
+```
+
+```{r}
+draw_boxplot <- function(column, title) {
+  boxplot(column, main = title, horizontal = TRUE)
+}
+
+for (col_name in names (df2)){
+  if (is.numeric(df2[[col_name]])){
+    title_text <- paste("Descriptive stat of", col_name, "before cleaning")
+    draw_boxplot(df2[[col_name]], title = title_text)
+    cat("\n")
+  }
+}
+```
+
+# 4. Task e
+
+### Errors Identified in Each Column
+
+### Glucose
+
+-   **Problem**: 0 mg/dL is not physiologically possible
+
+-   **Normal Range**: 70–100 mg/dL (fasting)
+
+```{r}
+df2 %>% 
+  filter(Glucose == 0)
+```
+
+### Blood Pressure
+
+-   **Problem**: 0 mm Hg diastolic pressure is unrealistic.
+
+-   **Normal Range**: 60–80 mm Hg (diastolic).
+
+```{r}
+df2 %>% 
+  filter(BloodPressure == 0)
+```
+
+### SkinThickness
+
+-   **Problem**: 0 mm triceps skinfold is impossible.
+
+-   **Normal Range**: 10–50 mm in adults.
+
+```{r}
+df2 %>% 
+  filter(SkinThickness == 0)
+```
+
+### Insulin
+
+-   **Problem**: 0 µU/mL is highly unlikely for serum insulin.
+
+-   **Normal Range**: 2–25 µU/mL fasting.
+
+```{r}
+df2 %>% 
+  filter(Insulin == 0)
+```
+
+### BMI
+
+-   **Problem**: BMI = 0 means zero weight — impossible.
+
+-   **Normal Range**: 18.5–24.9 (normal weight).
+
+```{r}
+df2 %>% 
+  filter(BMI == 0)
+```
+
+```{r}
+cols_to_clean <- c("Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI")
+for (col in cols_to_clean) {
+  df2[[col]][df2[[col]] == 0] <- NA
+}
+
+for (col in cols_to_clean) {
+  df2[[col]][is.na(df2[[col]])] <- mean(df2[[col]], na.rm = TRUE)
+}
+```
+
+```{r}
+describeBy(df2)
+```
+
+```{r}
+for (col_name in names(df2)){
+  plot <- ggplot(df2, aes_string(x = col_name)) +
+    geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+    labs(
+      title = paste("Distribution of", col_name, "after cleaning"),
+      x = col_name,
+      y = "Frequency (Count)"
+    ) +
+    theme_light()
+  
+  print(plot)
+}
+```
+
+```{r}
+for (col_name in names (df2)){
+  if (is.numeric(df2[[col_name]])){
+    title_text <- paste("Descriptive stat of", col_name, "after cleaning")
+    draw_boxplot(df2[[col_name]], title = title_text)
+    cat("\n")
+  }
+}
+```
