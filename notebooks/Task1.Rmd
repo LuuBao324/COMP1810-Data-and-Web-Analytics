@@ -88,10 +88,6 @@ str(df)
 
 ```
 
-```{r}
-
-```
-
 # 3. Task a:
 
 ## 3.1 Identify Top 3 Sources based on Revenue
@@ -128,21 +124,7 @@ top_3_revenue_table
 
 ```
 
-```{r}
-top_sources_by_year <- df %>%
-  group_by(`Source_Medium`) %>%
-  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE),.groups = 'drop') %>%
-  
-  slice_max(order_by = Total_Revenue, n = 3) %>%
-  ungroup()
-
-top_sources_by_year
-```
-
 ## 3.2 Chart to visualize the top three and revenue for each year
-
-```{r}
-```
 
 ```{r}
 chart_data <- revenue_by_source %>%
@@ -164,21 +146,15 @@ ggplot(chart_data, aes(x = factor(Year), y = Total_Revenue, fill = Source_Medium
         fill = "Source_Medium" ) + theme_minimal()
 ```
 
+The table and bar chart in compare 3 of the top traffic sources  A, B, and S based on revenue in 2019 and 2020. Source A produced the most revenue in both 2019 and 2020, and it had a great increase from \$335,498 in 2019 to \$958,638 in 2020, showing the strongest and increasing impact on the revenue of the business.
+
+Source S, comparatively, had a good increase from \$167,526 in 2019 to \$551,656 in 2020 suggesting better engagement or performance in what they were marketing or user engagement with that channel. Source B, on the other hand, increased in revenue, but more modestly from \$191,107 to \$349,585. In fact, in 2020, Source S surpassed Source B in revenue.
+
+These differences can be visually appreciated in the bar chart. Source A remains on top, but B and S fluctuated in their position and impact over time. Considering the above, Source A should remain the prioritization for revenue as the marketing and traffic strategies aim to drive more engagement. Source S is an area of opportunity and further investment could earn greater revenue. Source B has not grown at a greater pace when compared to both A and S and may need to be reconsidered.
+
 # 4. Task b:
 
 ```{r}
-top_5_sources_by_conv <- df %>%
-  group_by(Source_Medium) %>%
-  summarise(Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE)) %>%
-  slice_max(order_by = Avg_Conversion_Rate, n = 5) %>%
-  pull(Source_Medium)
-
-top_conversion <- df %>%
-  group_by(Source_Medium) %>%
-  summarise(Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE)) %>%
-  arrange(desc(Avg_Conversion_Rate)) %>%
-  slice_head(n = 5)
-
 device_summary <- df %>% 
   group_by(Source_Medium, Year, Month_of_the_year) %>%
   summarize(
@@ -187,31 +163,31 @@ device_summary <- df %>%
     Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE) 
   ) %>% 
   arrange(Source_Medium, Year, desc(Avg_Conversion_Rate))
+device_summary
+```
 
-device_summary$YearMonth <- as.Date(paste(device_summary$Year, device_summary$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
+```{r}
+top_5_sources_by_conv <- df %>%
+  group_by(Source_Medium) %>%
+  summarise(Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE)) %>%
+  slice_max(order_by = Avg_Conversion_Rate, n = 5) %>%
+  pull(Source_Medium)
 
 line_chart_data <- df %>%
   filter(Source_Medium %in% top_5_sources_by_conv)
 
-
-device_summary
-top_conversion
-```
-
-```{r}
 line_chart_data$YearMonth <- as.Date(paste(line_chart_data$Year, line_chart_data$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
 
-ggplot(line_chart_data, aes(x = line_chart_data$YearMonth, y = Conversion_Rate, color = Source_Medium, group = Source_Medium)) +
+ggplot(line_chart_data, aes(x = YearMonth, y = Conversion_Rate, color = Source_Medium, group = Source_Medium)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 2.5) +  
-  scale_y_continuous(labels = scales::percent) +
   scale_x_date(date_breaks = "1 months", date_labels = "%b %Y") +
   labs(
     title = "Monthly Users for Top 5 Traffic Sources",
     subtitle = "Comparing user trends over time (2019-2020)",
     x = "Month and Year",
     y = "Avg_Conversion_Rate (%)",
-    color = "Source_Medium" # Legend title
+    color = "Source_Medium"
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -221,13 +197,25 @@ ggplot(line_chart_data, aes(x = line_chart_data$YearMonth, y = Conversion_Rate, 
   )
 ```
 
+Source S distinctly stands as the most consistent channel throughout the 13-month period. Its conversion rates easily remain above 25% all throughout, reaching beyond 40% in high-profile periods especially during October 2019, April 2020, and July 2020. Such a strong, continued presence indicates great lead quality with Source S and that there must be some well-optimized, well-targeted campaigns supporting it. This very strength proves the uncontested strategic value of Source S and should therefore invite increased investments.
+
+Similar to Source S, Source U also performs strongly in the early months, reaching 30%. However, it gradually declines over time to below 20% by mid-2020. This may indicate issues of decreasing messaging relevance, audience saturation, or campaign execution performance. Monitoring and re-optimizing this source could reverse the downward trend.
+
+Sources CC and EE respectively show moderate but stable rates of conversion between 5% and 10%, without the spikes and drops like S and U. Their consistency could support and contribute to the ecosystem reliably as non-driving channels. Source DD was the weakest performer of the top five sources with conversion rates noticeably below 5% with no sign of improvement. The only reason for the source's inclusion in the top five probably relates to weaker performance for several other sources, as opposed to this source's own merits.
+
 ```{r}
+device_summary <- df %>% 
+  group_by(Source_Medium, Year, Month_of_the_year) %>%
+  summarize(
+    Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE) 
+  ) %>% 
+  arrange(Source_Medium, Year, desc(Avg_Conversion_Rate))
+
 device_summary$YearMonth <- as.Date(paste(device_summary$Year, device_summary$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
 
 ggplot(device_summary, aes(x = YearMonth, y = Avg_Conversion_Rate, fill = Source_Medium)) + 
   geom_bar(stat = "identity", position = "dodge") + 
-  coord_flip() +
-  scale_y_continuous(labels = scales::percent) + 
+  coord_flip() + 
   scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") + 
   labs(
     title = "Monthly Conversion Rate by Source_Medium",
@@ -236,6 +224,107 @@ ggplot(device_summary, aes(x = YearMonth, y = Avg_Conversion_Rate, fill = Source
     fill = "Source_Medium"
   ) + 
   theme_minimal()
+```
+
+The bar chart displays all sources by average conversion rate each month. As the line chart, source S continues to dominate the field and holds the highest conversion rates for all months. Many sources show up occasionally, and cluster at the bottom of the scale, often converting lower than 5%. This leads me to suspect that they are possibly experimental, short-lived, or poorly optimized campaigns. Sources like A, F, HH, K, L, and niche channels like euromessage/push, offered little to no impact on conversions, indicating potential areas for assessment of these strategies or a change in use cases.
+
+When these two visuals are analyzed together, it is obvious to see that a small number of sources provide the majority of conversion success while the majority of sources provide little return on this metric. Therefore, it is wise to prioritize sources such as S and review non-conversion roles for low conversion channels. Channels such as U and EE could take some focused tweaks to bring them back into play or to increase their value, but very low or inconsistent sources should be paused or replaced unless they have other non-conversion objectives. Moving forward with these changes will increase marketing efficiency and utilization of resources.
+
+```{r}
+grouped_user
+source_user_summary
+```
+
+```{r}
+source_user_summary <- df %>%
+  group_by(Source_Medium) %>%
+  summarise(
+    Total_Users = sum(Users, na.rm = TRUE),
+    Total_New_Users = sum(New_Users, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Total_Users))
+
+grouped_user <- source_user_summary %>%
+  pivot_longer(c(Total_Users, Total_New_Users),
+               names_to = "User_Type",
+               values_to = "Count")
+
+ggplot(grouped_user, aes(x = reorder(Source_Medium, -Count), y = Count, fill = User_Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title = "Total Users and New Users by Source/Medium",
+       x = "Source/Medium",
+       y = "Count") +
+  scale_fill_manual(values = c("Total_Users" = "orange", "Total_New_Users" = "lightblue"),
+                    labels = c("Total Users", "Total New Users")) +
+  theme_minimal() +
+  coord_flip()
+```
+
+```{r}
+df$YearMonth <- as.Date(paste(df$Year, df$Month_of_the_year, "01", sep = "-"), "%Y-%m-%d")
+
+all_sources <- df %>%
+  group_by(Source_Medium) %>%
+  summarise(Avg_Conversion_Rate = mean(Conversion_Rate, na.rm = TRUE)) %>%
+  arrange(desc(Avg_Conversion_Rate)) %>%
+  slice_head(n = 40) %>%
+  pull(Source_Medium)
+
+top_20_sources <- all_sources[1:20]
+next_20_sources <- all_sources[21:40]
+
+top_20_data <- df %>% filter(Source_Medium %in% top_20_sources)
+next_20_data <- df %>% filter(Source_Medium %in% next_20_sources)
+
+top_20_data
+next_20_data
+```
+
+```{r}
+distinct_colors <- c("#e6194B", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6", 
+  "#bcf60c", "#fabebe", "#008080", "#e6beff", "#9A6324", "#fffac8", "#800000", "#aaffc3", 
+  "#808000", "#ffd8b1", "#000075", "#a9a9a9")
+
+ggplot(top_20_data, aes(x = YearMonth, y = Conversion_Rate, color = Source_Medium, group = Source_Medium)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +  
+  scale_x_date(date_breaks = "1 months", date_labels = "%b %Y") +
+  scale_color_manual(values = distinct_colors_1) +
+  labs(
+    title = "Monthly Conversion Rate for Top 1-20 Sources",
+    subtitle = "Comparing user trends for the highest performers (2019-2020)",
+    x = "Month and Year",
+    y = "Conversion Rate (%)",
+    color = "Source / Medium"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+```
+
+```{r}
+ggplot(next_20_data, aes(x = YearMonth, y = Conversion_Rate, color = Source_Medium, group = Source_Medium)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +  
+  scale_x_date(date_breaks = "1 months", date_labels = "%b %Y") +
+  scale_color_manual(values = distinct_colors) + 
+  labs(
+    title = "Monthly Conversion Rate for Top 21-38 Sources",
+    subtitle = "Comparing user trends for the highest performers (2019-2020)",
+    x = "Month and Year",
+    y = "Conversion Rate (%)",
+    color = "Source / Medium"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "right",
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
 ```
 
 # 5. Task c:
@@ -261,6 +350,8 @@ corrplot(correlation_matrix,
          mar = c(0,0,1,0))
 ```
 
+Using Pearson correlation values, the correlation heatmap shows how Bounce Rate, Conversion Rate, Transactions, and Revenue are related to each other. Transactions and revenue have the strongest correlation, with a value of 0.98, which means that there is a very close and consistent positive relationship between the two. This means that increasing the number of transactions will almost certainly lead to higher revenue, so transaction volume is a key area to focus on for revenue growth. There is a moderate correlation between Conversion Rate and Revenue (0.35), which shows a weak but noticeable positive trend. However, the change in revenue with conversion rate is small, so improving conversion may help, but it may not be enough to make a big difference in revenue on its own. There is also a 0.30 correlation between Conversion Rate and Transactions, which means that better conversion rates usually lead to more purchases. However, this relationship is not very strong, so improvements may not always lead to big gains. There is a moderate negative correlation between Bounce Rate and Conversion Rate at -0.47. This means that as more people leave the site quickly, fewer conversions happen. This means that lowering the bounce rate could help raise the conversion rate, but only if it is done with other improvements. The correlation between Bounce Rate and Transactions is very low at 0.04, which means there is almost no connection between the two. This means that trying to lower the bounce rate is not likely to directly lead to more transactions. The relationship between Bounce Rate and Revenue is also very weak, with a correlation of only 0.02. This means that bounce rate by itself doesn't have much of an effect on overall revenue.
+
 ```{r}
 # Bounce Rate vs Conversion Rate
 ggplot(relationship_df, aes(x = Bounce_Rate, y = Conversion_Rate )) +
@@ -274,13 +365,15 @@ ggplot(relationship_df, aes(x = Bounce_Rate, y = Conversion_Rate )) +
 
 ```
 
+The scatter plot shows that there is a negative relationship between Bounce Rate and Conversion Rate. In other words, higher bounce rates tend to mean lower conversion rates. The downward-sloping regression line backs up this trend, even though the data points are a bit spread out. The correlation isn't very strong, but it's still there. This means that users who leave the site quickly are less likely to convert. This means that making landing pages more relevant, faster, or better designed can help lower the bounce rate, which can lead to better conversion rates.
+
 ```{r}
-# Conversion Rate vs Transaction
+# Conversion Rate vs Transactions
 ggplot(relationship_df, aes(x = Conversion_Rate, y = Transactions )) +
   geom_point(color = "green") +
   geom_smooth(method = "lm",color = "black", se = FALSE ) + 
   labs(
-    title = "Relationship between Conversion Rate and Transaction",
+    title = "Relationship between Conversion Rate and Transactions",
     x = "Conversion_Rate",
     y = "Transactions"
   ) + theme_minimal()
@@ -308,5 +401,28 @@ ggplot(relationship_df, aes(x = Bounce_Rate, y = Revenue )) +
     title = "Relationship between Bounce Rate and Revenue",
     x = "Bounce_Rate",
     y = "Revenue"
+  ) + theme_minimal()
+```
+
+```{r}
+# Conversion_Rate vs Revenue
+ggplot(relationship_df, aes(x = Conversion_Rate, y = Revenue )) +
+  geom_point(color = "purple") +
+  geom_smooth(method = "lm",color = "black", se = FALSE ) + 
+  labs(
+    title = "Relationship between Conversion Rate and Revenue",
+    x = "Conversion_Rate",
+    y = "Revenue"
+  ) + theme_minimal()
+```
+
+```{r}
+ggplot(relationship_df, aes(x = Bounce_Rate, y = Transactions )) +
+  geom_point(color = "darkgreen") +
+  geom_smooth(method = "lm",color = "black", se = FALSE ) + 
+  labs(
+    title = "Relationship between Bounce Rate and Transactions",
+    x = "Bounce_Rate",
+    y = "Transactions"
   ) + theme_minimal()
 ```
